@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visualizador de Fracciones</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-dark: #1d4ed8;
+    --accent-soft: #dbeafe;
+    --neutral-fill: #eef1f6;
+    --neutral-border: #94a3b8;
+    --ink: #1e293b;
+    --ink-muted: #64748b;
+    --surface: #ffffff;
+    --page-bg: #f4f6fb;
+    --error: #dc2626;
+    --error-bg: #fef2f2;
+    --negative: #dc2626;
+    --negative-dark: #b91c1c;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--page-bg);
+    color: var(--ink);
+    padding: 24px 16px 48px;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .lang-switch {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: flex;
+    gap: 6px;
+    z-index: 5;
+  }
+
+  .lang-btn {
+    border: 1.5px solid #cbd5e1;
+    background: var(--surface);
+    color: var(--ink-muted);
+    padding: 5px 13px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .lang-btn:hover { border-color: var(--accent); color: var(--ink); }
+
+  .lang-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+
+  header h1 {
+    font-size: 1.7rem;
+    margin: 0 0 6px;
+  }
+
+  header p {
+    color: var(--ink-muted);
+    margin: 0;
+    font-size: 0.95rem;
+  }
+
+  .input-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
+    padding: 22px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 18px;
+  }
+
+  .fraction-input {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .fraction-input input {
+    width: 84px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 600;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 4px;
+    color: var(--ink);
+    background: #fbfcfe;
+  }
+
+  .fraction-input input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .fraction-bar {
+    width: 100px;
+    height: 3px;
+    background: var(--ink);
+    border-radius: 2px;
+    margin: 6px 0;
+  }
+
+  .examples {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .examples span {
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+  }
+
+  .example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    color: var(--ink);
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.88rem;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+
+  .chip:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+  }
+
+  .error {
+    background: var(--error-bg);
+    color: var(--error);
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    padding: 10px 16px;
+    text-align: center;
+    font-size: 0.92rem;
+    margin-bottom: 18px;
+  }
+
+  .summary {
+    text-align: center;
+    font-size: 1.1rem;
+    margin-bottom: 22px;
+    color: var(--ink);
+  }
+
+  .summary strong {
+    color: var(--accent-dark);
+  }
+
+  .examples-summary {
+    flex: 1 1 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 2px 0 14px;
+  }
+
+  .examples-summary[hidden] {
+    display: none;
+  }
+
+  .eq-visual {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    row-gap: 14px;
+  }
+
+  .eq-visual .op {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .eq-visual .op-negative-mark {
+    color: var(--negative-dark);
+  }
+
+  .frac-box {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+  }
+
+  .frac-box-num,
+  .frac-box-den {
+    min-width: 30px;
+    padding: 4px 9px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 7px;
+    background: #fbfcfe;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1rem;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .frac-box-bar {
+    width: 28px;
+    height: 2px;
+    background: var(--ink);
+    border-radius: 1px;
+  }
+
+  .frac-box-negative .frac-box-num,
+  .frac-box-negative .frac-box-den {
+    color: var(--negative-dark);
+    border-color: var(--negative);
+    background: var(--error-bg);
+  }
+
+  .frac-box-negative .frac-box-bar {
+    background: var(--negative-dark);
+  }
+
+  .negative-note {
+    flex-basis: 100%;
+    text-align: center;
+    color: var(--negative-dark);
+    font-weight: 600;
+    font-size: 0.92rem;
+    margin-top: 2px;
+  }
+
+  .panels {
+    display: flex;
+    justify-content: center;
+  }
+
+  .panel {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  .panel h2 {
+    font-size: 1.05rem;
+    margin: 0;
+    color: var(--ink);
+  }
+
+  .units-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .unit-label {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  .unit-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* Circle (pie) */
+  svg.pie {
+    width: 120px;
+    height: 120px;
+  }
+
+  .pie path.filled {
+    fill: var(--accent);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+
+  .pie path.empty {
+    fill: var(--neutral-fill);
+    stroke: var(--surface);
+    stroke-width: 2;
+  }
+
+  .pie circle.outline {
+    fill: none;
+    stroke: var(--neutral-border);
+    stroke-width: 1.5;
+  }
+
+  .legend {
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 22px 0 6px;
+    font-size: 0.85rem;
+    color: var(--ink-muted);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1.5px solid var(--neutral-border);
+  }
+
+  .swatch.filled { background: var(--accent); border-color: var(--accent-dark); }
+  .swatch.empty { background: var(--neutral-fill); }
+
+  .theory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+
+  .theory-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
+    padding: 20px;
+  }
+
+  .theory-card h3 {
+    margin: 0 0 8px;
+    font-size: 1.05rem;
+    color: var(--accent-dark);
+  }
+
+  .theory-card p {
+    margin: 0 0 12px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--ink);
+  }
+
+  .theory-example {
+    font-size: 0.88rem;
+    color: var(--ink-muted);
+    line-height: 1.55;
+  }
+
+  .theory-example .frac-box {
+    vertical-align: middle;
+    margin: 4px 2px;
+  }
+
+  .tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .tab-btn {
+    border: 1.5px solid #cbd5e1;
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: 0.92rem;
+    font-weight: 600;
+    padding: 9px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .tab-btn:hover { border-color: var(--accent); }
+
+  .tab-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .tab-panel[hidden] { display: none; }
+
+  .op-toggle {
+    display: flex;
+    gap: 6px;
+  }
+
+  .op-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    border: 2px solid #cbd5e1;
+    background: #fbfcfe;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .op-btn.active {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+
+  .eq-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .eq-block-caption {
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+    text-align: center;
+    line-height: 1.35;
+  }
+
+  .eq-block-caption strong {
+    display: block;
+    color: var(--ink);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  .eq-connector {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--ink-muted);
+    align-self: center;
+    padding: 0 2px;
+  }
+
+  .eq-connector.eq-arrow {
+    font-size: 1.15rem;
+    color: var(--accent);
+  }
+
+  .pie path.filled.negative { fill: var(--negative); }
+  .swatch.negative { background: var(--negative); border-color: var(--negative-dark); }
+
+  .homo-input-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .homo-numerators {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .homo-numerators input {
+    width: 74px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border: 2px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 4px;
+    color: var(--ink);
+    background: #fbfcfe;
+  }
+
+  .homo-numerators input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .homo-shared-bar {
+    width: 210px;
+    margin: 6px 0;
+  }
+
+  .homo-den-input {
+    width: 84px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    padding: 6px 4px;
+    color: var(--accent-dark);
+    background: var(--accent-soft);
+  }
+
+  .homo-den-input:focus { outline: none; }
+
+  .subtabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+
+  .subtab-btn {
+    border: 1.5px solid #cbd5e1;
+    background: var(--surface);
+    color: var(--ink-muted);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 7px 20px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+
+  .subtab-btn:hover { border-color: var(--accent); }
+
+  .subtab-btn.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent-dark);
+  }
+
+  .subtab-panel[hidden] { display: none; }
+
+  .op-static {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--ink);
+    padding: 0 4px;
+  }
+
+  footer {
+    text-align: center;
+    margin-top: 34px;
+    font-size: 0.78rem;
+    color: var(--ink-muted);
+  }
+
+  @media (max-width: 520px) {
+    .input-card { padding: 18px; gap: 16px; }
+    .lang-switch { position: static; justify-content: center; margin-bottom: 14px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="lang-switch" role="group" aria-label="Language / Idioma">
+    <button type="button" class="lang-btn active" data-lang="es" aria-pressed="true">ES</button>
+    <button type="button" class="lang-btn" data-lang="en" aria-pressed="false">EN</button>
+  </div>
+
+  <header>
+    <h1 data-i18n="title">Visualizador de Fracciones</h1>
+    <p data-i18n="subtitle">Ingresa una fracción y observa cómo se representa visualmente.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="single" id="tabbtn-single" role="tab" aria-selected="true" data-i18n="tabSingle">Una fracción</button>
+    <button class="tab-btn" data-tab="hom" id="tabbtn-hom" role="tab" aria-selected="false" data-i18n="tabHom">Fracciones homogéneas</button>
+    <button class="tab-btn" data-tab="sum" id="tabbtn-sum" role="tab" aria-selected="false" data-i18n="tabHet">Fracciones heterogéneas</button>
+    <button class="tab-btn" data-tab="teoria" id="tabbtn-teoria" role="tab" aria-selected="false" data-i18n="tabTheory">Teoría</button>
+  </div>
+
+  <div id="tab-single" class="tab-panel">
+
+  <div class="input-card">
+    <div class="fraction-input">
+      <input type="number" id="numerador" value="3" min="0" max="60" aria-label="Numerador" data-i18n-aria="ariaNumerador">
+      <div class="fraction-bar"></div>
+      <input type="number" id="denominador" value="4" min="1" max="30" aria-label="Denominador" data-i18n-aria="ariaDenominador">
+    </div>
+
+    <div class="examples">
+      <span data-i18n="examplesLabel">Ejemplos rápidos:</span>
+      <div class="example-chips">
+        <button class="chip" data-frac="3/4">3/4</button>
+        <button class="chip" data-frac="8/3">8/3</button>
+        <button class="chip" data-frac="5/6">5/6</button>
+        <button class="chip" data-frac="7/2">7/2</button>
+        <button class="chip" data-frac="9/9">9/9</button>
+        <button class="chip" data-frac="1/1">1/1</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-message" class="error" hidden></div>
+
+  <div class="summary" id="summary" hidden></div>
+
+  <div class="panels">
+    <div class="panel">
+      <h2 data-i18n="panelPastel">Pastel (círculo)</h2>
+      <div class="units-wrap" id="shapes-circle"></div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><span class="swatch filled"></span><span data-i18n="legendFilled"> Parte indicada por el numerador</span></div>
+    <div class="legend-item"><span class="swatch empty"></span><span data-i18n="legendEmpty"> Resto de la unidad</span></div>
+  </div>
+
+  </div><!-- /#tab-single -->
+
+  <div id="tab-hom" class="tab-panel" hidden>
+
+    <div class="subtabs" role="tablist">
+      <button class="subtab-btn active" data-subtab="hom-suma" role="tab" aria-selected="true" data-i18n="subtabSuma">Suma</button>
+      <button class="subtab-btn" data-subtab="hom-resta" role="tab" aria-selected="false" data-i18n="subtabResta">Resta</button>
+    </div>
+
+    <div id="subtab-hom-suma" class="subtab-panel">
+
+      <div class="input-card">
+        <div class="fraction-input">
+          <input type="number" id="num-a-hom-suma" value="1" min="0" max="30" aria-label="Numerador A" data-i18n-aria="ariaNumeradorA">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-a-hom-suma" value="5" min="1" max="20" aria-label="Denominador (igual en ambas fracciones)" data-i18n-aria="ariaDenCompartido">
+        </div>
+
+        <span class="op-static">+</span>
+
+        <div class="fraction-input">
+          <input type="number" id="num-b-hom-suma" value="2" min="0" max="30" aria-label="Numerador B" data-i18n-aria="ariaNumeradorB">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-b-hom-suma" value="5" min="1" max="20" aria-label="Denominador (igual en ambas fracciones)" data-i18n-aria="ariaDenCompartido">
+        </div>
+
+        <div class="summary examples-summary" id="summary-hom-suma" hidden></div>
+
+      </div>
+
+      <div id="error-message-hom-suma" class="error" hidden></div>
+
+
+      <div class="panels">
+        <div class="panel">
+          <h2 data-i18n="panelPastel">Pastel (círculo)</h2>
+          <div class="units-wrap" id="shapes-circle-hom-suma"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch filled"></span><span data-i18n="legendFilled"> Parte indicada por el numerador</span></div>
+        <div class="legend-item"><span class="swatch empty"></span><span data-i18n="legendEmpty"> Resto de la unidad</span></div>
+        <div class="legend-item"><span class="swatch negative"></span><span data-i18n="legendNegative"> Resultado negativo (valor absoluto)</span></div>
+      </div>
+
+    </div><!-- /#subtab-hom-suma -->
+
+    <div id="subtab-hom-resta" class="subtab-panel" hidden>
+
+      <div class="input-card">
+        <div class="fraction-input">
+          <input type="number" id="num-a-hom-resta" value="3" min="0" max="30" aria-label="Numerador A" data-i18n-aria="ariaNumeradorA">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-a-hom-resta" value="5" min="1" max="20" aria-label="Denominador (igual en ambas fracciones)" data-i18n-aria="ariaDenCompartido">
+        </div>
+
+        <span class="op-static">−</span>
+
+        <div class="fraction-input">
+          <input type="number" id="num-b-hom-resta" value="1" min="0" max="30" aria-label="Numerador B" data-i18n-aria="ariaNumeradorB">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-b-hom-resta" value="5" min="1" max="20" aria-label="Denominador (igual en ambas fracciones)" data-i18n-aria="ariaDenCompartido">
+        </div>
+
+        <div class="summary examples-summary" id="summary-hom-resta" hidden></div>
+
+      </div>
+
+      <div id="error-message-hom-resta" class="error" hidden></div>
+
+
+      <div class="panels">
+        <div class="panel">
+          <h2 data-i18n="panelPastel">Pastel (círculo)</h2>
+          <div class="units-wrap" id="shapes-circle-hom-resta"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch filled"></span><span data-i18n="legendFilled"> Parte indicada por el numerador</span></div>
+        <div class="legend-item"><span class="swatch empty"></span><span data-i18n="legendEmpty"> Resto de la unidad</span></div>
+        <div class="legend-item"><span class="swatch negative"></span><span data-i18n="legendNegative"> Resultado negativo (valor absoluto)</span></div>
+      </div>
+
+    </div><!-- /#subtab-hom-resta -->
+
+  </div><!-- /#tab-hom -->
+
+  <div id="tab-sum" class="tab-panel" hidden>
+
+    <div class="subtabs" role="tablist">
+      <button class="subtab-btn active" data-subtab="het-suma" role="tab" aria-selected="true" data-i18n="subtabSuma">Suma</button>
+      <button class="subtab-btn" data-subtab="het-resta" role="tab" aria-selected="false" data-i18n="subtabResta">Resta</button>
+    </div>
+
+    <div id="subtab-het-suma" class="subtab-panel">
+
+      <div class="input-card">
+        <div class="fraction-input">
+          <input type="number" id="num-a-het-suma" value="1" min="0" max="24" aria-label="Numerador A" data-i18n-aria="ariaNumeradorA">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-a-het-suma" value="3" min="1" max="12" aria-label="Denominador A" data-i18n-aria="ariaDenominadorA">
+        </div>
+
+        <span class="op-static">+</span>
+
+        <div class="fraction-input">
+          <input type="number" id="num-b-het-suma" value="1" min="0" max="24" aria-label="Numerador B" data-i18n-aria="ariaNumeradorB">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-b-het-suma" value="6" min="1" max="12" aria-label="Denominador B" data-i18n-aria="ariaDenominadorB">
+        </div>
+
+        <div class="summary examples-summary" id="summary-het-suma" hidden></div>
+
+      </div>
+
+      <div id="error-message-het-suma" class="error" hidden></div>
+
+
+      <div class="panels">
+        <div class="panel">
+          <h2 data-i18n="panelPastel">Pastel (círculo)</h2>
+          <div class="units-wrap" id="shapes-circle-het-suma"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch filled"></span><span data-i18n="legendFilled"> Parte indicada por el numerador</span></div>
+        <div class="legend-item"><span class="swatch empty"></span><span data-i18n="legendEmpty"> Resto de la unidad</span></div>
+        <div class="legend-item"><span class="swatch negative"></span><span data-i18n="legendNegative"> Resultado negativo (valor absoluto)</span></div>
+      </div>
+
+    </div><!-- /#subtab-het-suma -->
+
+    <div id="subtab-het-resta" class="subtab-panel" hidden>
+
+      <div class="input-card">
+        <div class="fraction-input">
+          <input type="number" id="num-a-het-resta" value="3" min="0" max="24" aria-label="Numerador A" data-i18n-aria="ariaNumeradorA">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-a-het-resta" value="4" min="1" max="12" aria-label="Denominador A" data-i18n-aria="ariaDenominadorA">
+        </div>
+
+        <span class="op-static">−</span>
+
+        <div class="fraction-input">
+          <input type="number" id="num-b-het-resta" value="1" min="0" max="24" aria-label="Numerador B" data-i18n-aria="ariaNumeradorB">
+          <div class="fraction-bar"></div>
+          <input type="number" id="den-b-het-resta" value="2" min="1" max="12" aria-label="Denominador B" data-i18n-aria="ariaDenominadorB">
+        </div>
+
+        <div class="summary examples-summary" id="summary-het-resta" hidden></div>
+
+      </div>
+
+      <div id="error-message-het-resta" class="error" hidden></div>
+
+
+      <div class="panels">
+        <div class="panel">
+          <h2 data-i18n="panelPastel">Pastel (círculo)</h2>
+          <div class="units-wrap" id="shapes-circle-het-resta"></div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><span class="swatch filled"></span><span data-i18n="legendFilled"> Parte indicada por el numerador</span></div>
+        <div class="legend-item"><span class="swatch empty"></span><span data-i18n="legendEmpty"> Resto de la unidad</span></div>
+        <div class="legend-item"><span class="swatch negative"></span><span data-i18n="legendNegative"> Resultado negativo (valor absoluto)</span></div>
+      </div>
+
+    </div><!-- /#subtab-het-resta -->
+
+  </div><!-- /#tab-sum -->
+
+  <div id="tab-teoria" class="tab-panel" hidden>
+
+    <div class="theory-grid"></div>
+
+  </div><!-- /#tab-teoria -->
+
+  <footer data-i18n="footer">Herramienta didáctica de fracciones · Proyecto STEM</footer>
+</div>
+
+<script>
+(function () {
+  // ---------- i18n ----------
+  const I18N = {
+    es: {
+      title: 'Visualizador de Fracciones',
+      subtitle: 'Ingresa una fracción y observa cómo se representa visualmente.',
+      tabSingle: 'Una fracción',
+      tabHom: 'Fracciones homogéneas',
+      tabHet: 'Fracciones heterogéneas',
+      tabTheory: 'Teoría',
+      subtabSuma: 'Suma',
+      subtabResta: 'Resta',
+      examplesLabel: 'Ejemplos rápidos:',
+      panelPastel: 'Pastel (círculo)',
+      legendFilled: 'Parte indicada por el numerador',
+      legendEmpty: 'Resto de la unidad',
+      legendNegative: 'Resultado negativo (valor absoluto)',
+      footer: 'Herramienta didáctica de fracciones · Proyecto STEM',
+      ariaNumerador: 'Numerador',
+      ariaDenominador: 'Denominador',
+      ariaNumeradorA: 'Numerador A',
+      ariaNumeradorB: 'Numerador B',
+      ariaDenCompartido: 'Denominador (igual en ambas fracciones)',
+      ariaDenominadorA: 'Denominador A',
+      ariaDenominadorB: 'Denominador B',
+
+      errEnterBoth: 'Ingresa numerador y denominador.',
+      errIntegers: 'El numerador y el denominador deben ser números enteros.',
+      errDenPositive: 'El denominador debe ser mayor que cero.',
+      errNumNegative: 'El numerador no puede ser negativo.',
+      errDenMax: (max) => `Para que la visualización sea clara, usa un denominador de ${max} o menos.`,
+      errNumMax: (max) => `Usa un numerador de ${max} o menos para mantener la visualización legible.`,
+
+      unidadCompleta: 'Unidad completa',
+      improperWithRemainder: (whole, den, rem) => ` = fracción impropia &nbsp;→&nbsp; ${whole} entero${whole === 1 ? '' : 's'} y ${rem}/${den}`,
+      improperExact: (whole) => ` = fracción impropia &nbsp;→&nbsp; ${whole} entero${whole === 1 ? '' : 's'} exacto${whole === 1 ? '' : 's'}`,
+      wholeUnitSuffix: ' = una unidad completa',
+      properSuffix: ' = fracción propia',
+
+      labelA: 'A',
+      labelB: 'B',
+      labelAEq: 'A equivalente',
+      labelBEq: 'B equivalente',
+      labelResultado: 'Resultado',
+      labelSimplificado: 'Simplificado',
+      resultadoNegativo: 'Resultado negativo',
+      errCommonDenTooBig: (cd) => `El mínimo común denominador (${cd}) es demasiado grande. Prueba con valores más compatibles.`,
+
+      errHomFillAll: 'Completa los dos numeradores y el denominador (igual en ambas fracciones).',
+      errHetFillAll: 'Completa las dos fracciones (numerador y denominador).',
+      errIntegersEq: 'Numeradores y denominador(es) deben ser números enteros.',
+      errDenPositiveHom: 'El denominador debe ser mayor que cero.',
+      errDenPositiveHet: 'Los denominadores deben ser mayores que cero.',
+      errNumNegativeEq: 'Los numeradores no pueden ser negativos.',
+      errDenMaxHom: (max) => `Usa un denominador de ${max} o menos.`,
+      errDenMaxHet: (max) => `Usa denominadores de ${max} o menos para que la visualización sea clara.`,
+      errNumMaxEq: (max) => `Usa numeradores de ${max} o menos.`,
+
+      theory: [
+        {
+          title: '¿Qué es una fracción?',
+          desc: 'Una fracción representa una parte de un todo dividido en partes iguales. Se escribe como <strong>a/b</strong>: el número de arriba es el numerador y el de abajo es el denominador.',
+          exampleHtml: '<span class="frac-box"><span class="frac-box-num">a</span><span class="frac-box-bar"></span><span class="frac-box-den">b</span></span>',
+        },
+        {
+          title: 'Numerador',
+          desc: 'Es el número que va en la parte superior de la fracción. Indica cuántas partes del total se están tomando o considerando.',
+          exampleHtml: 'En <strong>3/4</strong>, el numerador es <strong>3</strong>: se toman 3 de las 4 partes.',
+        },
+        {
+          title: 'Denominador',
+          desc: 'Es el número que va en la parte inferior de la fracción. Indica en cuántas partes iguales se divide el todo, y nunca puede ser cero.',
+          exampleHtml: 'En <strong>3/4</strong>, el denominador es <strong>4</strong>: el todo se dividió en 4 partes.',
+        },
+        {
+          title: 'Fracción propia',
+          desc: 'El numerador es menor que el denominador (a &lt; b). Representa una cantidad menor que una unidad completa.',
+          exampleHtml: 'Ejemplo: <strong>3/4</strong> (tres cuartos de una unidad).',
+        },
+        {
+          title: 'Fracción impropia',
+          desc: 'El numerador es mayor o igual que el denominador (a ≥ b). Representa una cantidad igual o mayor que una unidad completa.',
+          exampleHtml: 'Ejemplo: <strong>8/3</strong> (más de dos unidades completas).',
+        },
+        {
+          title: 'Fracción mixta',
+          desc: 'Combina un número entero con una fracción propia. Toda fracción impropia se puede escribir como fracción mixta, separando las unidades completas del resto.',
+          exampleHtml: 'Ejemplo: <strong>8/3 = 2 enteros y 2/3</strong>.',
+        },
+        {
+          title: 'Fracciones equivalentes',
+          desc: 'Representan la misma cantidad aunque tengan numeradores y denominadores diferentes. Se obtienen multiplicando o dividiendo el numerador y el denominador por el mismo número.',
+          exampleHtml: 'Ejemplo: <strong>1/2 = 2/4 = 3/6</strong>.',
+        },
+        {
+          title: 'Simplificación de una fracción',
+          desc: 'Consiste en dividir el numerador y el denominador entre su máximo común divisor (MCD), para obtener una fracción equivalente más simple.',
+          exampleHtml: 'Ejemplo: <strong>6/8 ÷ 2 = 3/4</strong> (se dividió entre el MCD, que es 2).',
+        },
+      ],
+    },
+    en: {
+      title: 'Fraction Visualizer',
+      subtitle: 'Enter a fraction and see how it is represented visually.',
+      tabSingle: 'One Fraction',
+      tabHom: 'Like Fractions',
+      tabHet: 'Unlike Fractions',
+      tabTheory: 'Theory',
+      subtabSuma: 'Addition',
+      subtabResta: 'Subtraction',
+      examplesLabel: 'Quick examples:',
+      panelPastel: 'Pie chart (circle)',
+      legendFilled: 'Part indicated by the numerator',
+      legendEmpty: 'Remaining part of the whole',
+      legendNegative: 'Negative result (absolute value)',
+      footer: 'Fraction learning tool · STEM Project',
+      ariaNumerador: 'Numerator',
+      ariaDenominador: 'Denominator',
+      ariaNumeradorA: 'Numerator A',
+      ariaNumeradorB: 'Numerator B',
+      ariaDenCompartido: 'Denominator (same in both fractions)',
+      ariaDenominadorA: 'Denominator A',
+      ariaDenominadorB: 'Denominator B',
+
+      errEnterBoth: 'Enter a numerator and a denominator.',
+      errIntegers: 'The numerator and denominator must be whole numbers.',
+      errDenPositive: 'The denominator must be greater than zero.',
+      errNumNegative: 'The numerator cannot be negative.',
+      errDenMax: (max) => `For a clear visualization, use a denominator of ${max} or less.`,
+      errNumMax: (max) => `Use a numerator of ${max} or less to keep the visualization readable.`,
+
+      unidadCompleta: 'Whole unit',
+      improperWithRemainder: (whole, den, rem) => ` = improper fraction &nbsp;→&nbsp; ${whole} whole${whole === 1 ? '' : 's'} and ${rem}/${den}`,
+      improperExact: (whole) => ` = improper fraction &nbsp;→&nbsp; ${whole} whole${whole === 1 ? '' : 's'} exactly`,
+      wholeUnitSuffix: ' = a whole unit',
+      properSuffix: ' = proper fraction',
+
+      labelA: 'A',
+      labelB: 'B',
+      labelAEq: 'Equivalent A',
+      labelBEq: 'Equivalent B',
+      labelResultado: 'Result',
+      labelSimplificado: 'Simplified',
+      resultadoNegativo: 'Negative result',
+      errCommonDenTooBig: (cd) => `The least common denominator (${cd}) is too large. Try more compatible values.`,
+
+      errHomFillAll: 'Fill in both numerators and the denominator (same for both fractions).',
+      errHetFillAll: 'Fill in both fractions (numerator and denominator).',
+      errIntegersEq: 'Numerators and denominator(s) must be whole numbers.',
+      errDenPositiveHom: 'The denominator must be greater than zero.',
+      errDenPositiveHet: 'Denominators must be greater than zero.',
+      errNumNegativeEq: 'Numerators cannot be negative.',
+      errDenMaxHom: (max) => `Use a denominator of ${max} or less.`,
+      errDenMaxHet: (max) => `Use denominators of ${max} or less so the visualization stays clear.`,
+      errNumMaxEq: (max) => `Use numerators of ${max} or less.`,
+
+      theory: [
+        {
+          title: 'What is a fraction?',
+          desc: 'A fraction represents a part of a whole divided into equal parts. It is written as <strong>a/b</strong>: the top number is the numerator and the bottom number is the denominator.',
+          exampleHtml: '<span class="frac-box"><span class="frac-box-num">a</span><span class="frac-box-bar"></span><span class="frac-box-den">b</span></span>',
+        },
+        {
+          title: 'Numerator',
+          desc: 'The number written above the fraction bar. It shows how many parts of the whole are being taken or considered.',
+          exampleHtml: 'In <strong>3/4</strong>, the numerator is <strong>3</strong>: 3 of the 4 parts are taken.',
+        },
+        {
+          title: 'Denominator',
+          desc: 'The number written below the fraction bar. It shows into how many equal parts the whole was divided, and it can never be zero.',
+          exampleHtml: 'In <strong>3/4</strong>, the denominator is <strong>4</strong>: the whole was divided into 4 parts.',
+        },
+        {
+          title: 'Proper fraction',
+          desc: 'The numerator is smaller than the denominator (a &lt; b). It represents a quantity smaller than one whole unit.',
+          exampleHtml: 'Example: <strong>3/4</strong> (three quarters of a unit).',
+        },
+        {
+          title: 'Improper fraction',
+          desc: 'The numerator is greater than or equal to the denominator (a ≥ b). It represents a quantity equal to or greater than one whole unit.',
+          exampleHtml: 'Example: <strong>8/3</strong> (more than two whole units).',
+        },
+        {
+          title: 'Mixed number',
+          desc: 'Combines a whole number with a proper fraction. Every improper fraction can be written as a mixed number by separating the whole units from the remainder.',
+          exampleHtml: 'Example: <strong>8/3 = 2 wholes and 2/3</strong>.',
+        },
+        {
+          title: 'Equivalent fractions',
+          desc: 'Fractions that represent the same amount even though they have different numerators and denominators. They are obtained by multiplying or dividing the numerator and denominator by the same number.',
+          exampleHtml: 'Example: <strong>1/2 = 2/4 = 3/6</strong>.',
+        },
+        {
+          title: 'Simplifying a fraction',
+          desc: 'Dividing the numerator and denominator by their greatest common divisor (GCD) to obtain a simpler, equivalent fraction.',
+          exampleHtml: 'Example: <strong>6/8 ÷ 2 = 3/4</strong> (divided by the GCD, which is 2).',
+        },
+      ],
+    },
+  };
+
+  let LANG = 'es';
+  function t(key, ...args) {
+    const val = I18N[LANG][key];
+    return typeof val === 'function' ? val(...args) : val;
+  }
+
+  const MAX_NUM = 60;
+  const MAX_DEN = 30;
+
+  const numInput = document.getElementById('numerador');
+  const denInput = document.getElementById('denominador');
+  const errorBox = document.getElementById('error-message');
+  const summaryBox = document.getElementById('summary');
+  const circleWrap = document.getElementById('shapes-circle');
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.hidden = false;
+    summaryBox.hidden = true;
+    circleWrap.innerHTML = '';
+  }
+
+  function clearError() {
+    errorBox.hidden = true;
+  }
+
+  // --- Circle (pie) ---
+  function polarToCartesian(cx, cy, r, angleDeg) {
+    const rad = (angleDeg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function describeSlice(cx, cy, r, startAngle, endAngle) {
+    const start = polarToCartesian(cx, cy, r, endAngle);
+    const end = polarToCartesian(cx, cy, r, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
+    return [
+      'M', cx, cy,
+      'L', start.x.toFixed(3), start.y.toFixed(3),
+      'A', r, r, 0, largeArcFlag, 0, end.x.toFixed(3), end.y.toFixed(3),
+      'Z'
+    ].join(' ');
+  }
+
+  function buildPie(filledCount, total, variant) {
+    const size = 120, r = 54, cx = size / 2, cy = size / 2;
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'pie');
+    svg.setAttribute('viewBox', `0 0 ${size} ${size}`);
+    const filledClass = 'filled' + (variant === 'negative' ? ' negative' : '');
+
+    if (total === 1) {
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', cx);
+      circle.setAttribute('cy', cy);
+      circle.setAttribute('r', r);
+      circle.setAttribute('class', filledCount >= 1 ? filledClass : 'empty');
+      svg.appendChild(circle);
+    } else {
+      const anglePer = 360 / total;
+      for (let i = 0; i < total; i++) {
+        const path = document.createElementNS(svgNS, 'path');
+        const startA = i * anglePer;
+        const endA = (i + 1) * anglePer;
+        path.setAttribute('d', describeSlice(cx, cy, r, startA, endA));
+        path.setAttribute('class', i < filledCount ? filledClass : 'empty');
+        svg.appendChild(path);
+      }
+    }
+
+    const outline = document.createElementNS(svgNS, 'circle');
+    outline.setAttribute('cx', cx);
+    outline.setAttribute('cy', cy);
+    outline.setAttribute('r', r);
+    outline.setAttribute('class', 'outline');
+    svg.appendChild(outline);
+
+    return svg;
+  }
+
+  function computeUnits(num, den) {
+    const wholeUnits = Math.floor(num / den);
+    const remainder = num % den;
+    const units = [];
+    for (let i = 0; i < wholeUnits; i++) units.push(den);
+    if (remainder > 0) units.push(remainder);
+    if (units.length === 0) units.push(0);
+    return units;
+  }
+
+  function gcd(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    while (b) { const t = b; b = a % b; a = t; }
+    return a || 1;
+  }
+
+  function lcm(a, b) {
+    return Math.abs(a * b) / gcd(a, b);
+  }
+
+  function addUnit(wrap, node, label) {
+    const unit = document.createElement('div');
+    unit.className = 'unit-block';
+    unit.appendChild(node);
+    if (label) {
+      const lab = document.createElement('div');
+      lab.className = 'unit-label';
+      lab.textContent = label;
+      unit.appendChild(lab);
+    }
+    wrap.appendChild(unit);
+  }
+
+  function render() {
+    const rawNum = numInput.value.trim();
+    const rawDen = denInput.value.trim();
+
+    if (rawNum === '' || rawDen === '') {
+      showError(t('errEnterBoth'));
+      return;
+    }
+
+    const num = Number(rawNum);
+    const den = Number(rawDen);
+
+    if (!Number.isInteger(num) || !Number.isInteger(den)) {
+      showError(t('errIntegers'));
+      return;
+    }
+    if (den <= 0) {
+      showError(t('errDenPositive'));
+      return;
+    }
+    if (num < 0) {
+      showError(t('errNumNegative'));
+      return;
+    }
+    if (den > MAX_DEN) {
+      showError(t('errDenMax', MAX_DEN));
+      return;
+    }
+    if (num > MAX_NUM) {
+      showError(t('errNumMax', MAX_NUM));
+      return;
+    }
+
+    clearError();
+
+    circleWrap.innerHTML = '';
+
+    const wholeUnits = Math.floor(num / den);
+    const remainder = num % den;
+    const isImproper = num > den;
+
+    const units = computeUnits(num, den);
+
+    units.forEach((filledCount) => {
+      let label = null;
+      if (units.length > 1) {
+        label = (filledCount === den) ? t('unidadCompleta') : `${filledCount}/${den}`;
+      }
+      addUnit(circleWrap, buildPie(filledCount, den), label);
+    });
+
+    // Summary text
+    let summaryHtml = `<strong>${num}/${den}</strong>`;
+    if (isImproper) {
+      summaryHtml += remainder > 0
+        ? t('improperWithRemainder', wholeUnits, den, remainder)
+        : t('improperExact', wholeUnits);
+    } else if (num === den) {
+      summaryHtml += t('wholeUnitSuffix');
+    } else {
+      summaryHtml += t('properSuffix');
+    }
+    summaryBox.innerHTML = summaryHtml;
+    summaryBox.hidden = false;
+  }
+
+  numInput.addEventListener('input', render);
+  denInput.addEventListener('input', render);
+
+  document.querySelectorAll('#tab-single .chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const [n, d] = btn.dataset.frac.split('/');
+      numInput.value = n;
+      denInput.value = d;
+      render();
+    });
+  });
+
+  // ---------- Suma y resta: lógica compartida ----------
+  function renderFractionBlock2D(wrap, builderFn, num, den, roleLabel, variant) {
+    const units = computeUnits(num, den);
+    const block = document.createElement('div');
+    block.className = 'eq-block';
+    const shapesRow = document.createElement('div');
+    shapesRow.className = 'units-wrap';
+    units.forEach((filled) => {
+      const label = units.length > 1
+        ? (filled === den ? t('unidadCompleta') : `${filled}/${den}`)
+        : null;
+      addUnit(shapesRow, builderFn(filled, den, variant), label);
+    });
+    block.appendChild(shapesRow);
+    const caption = document.createElement('div');
+    caption.className = 'eq-block-caption';
+    caption.innerHTML = `<strong>${roleLabel}</strong>${num}/${den}`;
+    block.appendChild(caption);
+    wrap.appendChild(block);
+  }
+
+  function addConnector(wrap, symbol, isArrow) {
+    const el = document.createElement('div');
+    el.className = 'eq-connector' + (isArrow ? ' eq-arrow' : '');
+    el.textContent = symbol;
+    wrap.appendChild(el);
+  }
+
+  // Núcleo compartido: calcula y dibuja A (op) B = Resultado (→ Simplificado)
+  // en el panel de pastel. Usado tanto por homogéneas como heterogéneas.
+  function fracBoxHtml(numContent, denContent, variant) {
+    const cls = variant === 'negative' ? ' frac-box-negative' : '';
+    return `<span class="frac-box${cls}"><span class="frac-box-num">${numContent}</span><span class="frac-box-bar"></span><span class="frac-box-den">${denContent}</span></span>`;
+  }
+
+  function computeAndRenderEquation(numA, denA, numB, denB, op, wraps, summaryBox, maxCommonDen) {
+    const commonDen = lcm(denA, denB);
+    if (commonDen > maxCommonDen) {
+      return { error: t('errCommonDenTooBig', commonDen) };
+    }
+
+    const convNumA = numA * (commonDen / denA);
+    const convNumB = numB * (commonDen / denB);
+    const resultSigned = op === '+' ? convNumA + convNumB : convNumA - convNumB;
+    const isNegative = resultSigned < 0;
+    const resultMag = Math.abs(resultSigned);
+    const g = gcd(resultMag, commonDen);
+    const simplifiedNum = resultMag / g;
+    const simplifiedDen = commonDen / g;
+    const needsSimplify = resultMag > 0 && simplifiedDen !== commonDen;
+    const needsConvertA = denA !== commonDen;
+    const needsConvertB = denB !== commonDen;
+    const resultVariant = isNegative ? 'negative' : null;
+
+    wraps.circle.innerHTML = '';
+
+    [
+      [wraps.circle, buildPie],
+    ].forEach(([wrap, builderFn]) => {
+      renderFractionBlock2D(wrap, builderFn, numA, denA, t('labelA'), null);
+      if (needsConvertA) {
+        addConnector(wrap, '→', true);
+        renderFractionBlock2D(wrap, builderFn, convNumA, commonDen, t('labelAEq'), null);
+      }
+      addConnector(wrap, op === '+' ? '+' : '−', false);
+      renderFractionBlock2D(wrap, builderFn, numB, denB, t('labelB'), null);
+      if (needsConvertB) {
+        addConnector(wrap, '→', true);
+        renderFractionBlock2D(wrap, builderFn, convNumB, commonDen, t('labelBEq'), null);
+      }
+      addConnector(wrap, '=', false);
+      renderFractionBlock2D(wrap, builderFn, resultMag, commonDen, t('labelResultado'), resultVariant);
+      if (needsSimplify) {
+        addConnector(wrap, '→', true);
+        renderFractionBlock2D(wrap, builderFn, simplifiedNum, simplifiedDen, t('labelSimplificado'), resultVariant);
+      }
+    });
+
+    const opSymbol = op === '+' ? '+' : '−';
+    let eqHtml = fracBoxHtml(numA, denA) + `<span class="op">${opSymbol}</span>` + fracBoxHtml(numB, denB);
+    if (needsConvertA || needsConvertB) {
+      eqHtml += `<span class="op">=</span>` + fracBoxHtml(convNumA, commonDen) + `<span class="op">${opSymbol}</span>` + fracBoxHtml(convNumB, commonDen);
+    }
+    eqHtml += `<span class="op">=</span>` + fracBoxHtml(`${convNumA}${opSymbol}${convNumB}`, commonDen);
+    eqHtml += `<span class="op">=</span>` + (isNegative ? `<span class="op op-negative-mark">−</span>` : '') + fracBoxHtml(resultMag, commonDen, resultVariant);
+    if (needsSimplify) {
+      eqHtml += `<span class="op">=</span>` + (isNegative ? `<span class="op op-negative-mark">−</span>` : '') + fracBoxHtml(simplifiedNum, simplifiedDen, resultVariant);
+    }
+    let summaryHtml = `<div class="eq-visual">${eqHtml}</div>`;
+    if (isNegative) {
+      summaryHtml += `<div class="negative-note">${t('resultadoNegativo')}</div>`;
+    }
+    summaryBox.innerHTML = summaryHtml;
+    summaryBox.hidden = false;
+    return { error: null };
+  }
+
+  // ---------- Suma y resta: paneles genéricos (homogéneas/heterogéneas × suma/resta) ----------
+  const HOM_NUM_MAX = 30;
+  const HOM_DEN_MAX = 20;
+  const HET_NUM_MAX = 24;
+  const HET_DEN_MAX = 12;
+  const HET_COMMON_DEN_MAX = 48;
+
+  // Crea y conecta un panel de ecuación (A op B = Resultado) para un id/operación fijos.
+  // mode 'hom' usa un único denominador compartido; mode 'het' usa dos denominadores propios.
+  function setupEquationPanel(cfg) {
+    const isHom = cfg.mode === 'hom';
+    const numAInput = document.getElementById(`num-a-${cfg.id}`);
+    const numBInput = document.getElementById(`num-b-${cfg.id}`);
+    const denAInput = document.getElementById(`den-a-${cfg.id}`);
+    const denBInput = document.getElementById(`den-b-${cfg.id}`);
+    const errorBox = document.getElementById(`error-message-${cfg.id}`);
+    const summaryBox = document.getElementById(`summary-${cfg.id}`);
+    const circleWrap = document.getElementById(`shapes-circle-${cfg.id}`);
+
+    function showErr(msg) {
+      errorBox.textContent = msg;
+      errorBox.hidden = false;
+      summaryBox.hidden = true;
+      circleWrap.innerHTML = '';
+    }
+
+    function doRender() {
+      const rawNumA = numAInput.value.trim();
+      const rawNumB = numBInput.value.trim();
+      const rawDenA = denAInput.value.trim();
+      const rawDenB = denBInput.value.trim();
+
+      if (rawNumA === '' || rawNumB === '' || rawDenA === '' || rawDenB === '') {
+        showErr(isHom ? t('errHomFillAll') : t('errHetFillAll'));
+        return;
+      }
+
+      const numA = Number(rawNumA), numB = Number(rawNumB);
+      const denA = Number(rawDenA), denB = Number(rawDenB);
+
+      if (![numA, numB, denA, denB].every(Number.isInteger)) {
+        showErr(t('errIntegersEq'));
+        return;
+      }
+      if (denA <= 0 || denB <= 0) {
+        showErr(isHom ? t('errDenPositiveHom') : t('errDenPositiveHet'));
+        return;
+      }
+      if (numA < 0 || numB < 0) {
+        showErr(t('errNumNegativeEq'));
+        return;
+      }
+      if (denA > cfg.denMax || denB > cfg.denMax) {
+        showErr(isHom ? t('errDenMaxHom', cfg.denMax) : t('errDenMaxHet', cfg.denMax));
+        return;
+      }
+      if (numA > cfg.numMax || numB > cfg.numMax) {
+        showErr(t('errNumMaxEq', cfg.numMax));
+        return;
+      }
+
+      errorBox.hidden = true;
+
+      const result = computeAndRenderEquation(
+        numA, denA, numB, denB, cfg.op,
+        { circle: circleWrap },
+        summaryBox,
+        cfg.commonDenMax
+      );
+      if (result.error) showErr(result.error);
+    }
+
+    if (isHom) {
+      // En homogéneas ambos denominadores deben coincidir siempre:
+      // al escribir en uno, se refleja automáticamente en el otro.
+      numAInput.addEventListener('input', doRender);
+      numBInput.addEventListener('input', doRender);
+      denAInput.addEventListener('input', () => { denBInput.value = denAInput.value; doRender(); });
+      denBInput.addEventListener('input', () => { denAInput.value = denBInput.value; doRender(); });
+    } else {
+      [numAInput, denAInput, numBInput, denBInput].forEach((el) => el.addEventListener('input', doRender));
+    }
+
+    document.querySelectorAll(`#subtab-${cfg.id} .chip`).forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const match = btn.dataset.eq.match(/^(\d+)\/(\d+)[+-](\d+)\/(\d+)$/);
+        if (!match) return;
+        numAInput.value = match[1];
+        denAInput.value = match[2];
+        numBInput.value = match[3];
+        denBInput.value = match[4];
+        doRender();
+      });
+    });
+
+    return { render: doRender };
+  }
+
+  const eqPanels = {
+    'hom-suma': setupEquationPanel({ id: 'hom-suma', mode: 'hom', op: '+', numMax: HOM_NUM_MAX, denMax: HOM_DEN_MAX, commonDenMax: HOM_DEN_MAX }),
+    'hom-resta': setupEquationPanel({ id: 'hom-resta', mode: 'hom', op: '-', numMax: HOM_NUM_MAX, denMax: HOM_DEN_MAX, commonDenMax: HOM_DEN_MAX }),
+    'het-suma': setupEquationPanel({ id: 'het-suma', mode: 'het', op: '+', numMax: HET_NUM_MAX, denMax: HET_DEN_MAX, commonDenMax: HET_COMMON_DEN_MAX }),
+    'het-resta': setupEquationPanel({ id: 'het-resta', mode: 'het', op: '-', numMax: HET_NUM_MAX, denMax: HET_DEN_MAX, commonDenMax: HET_COMMON_DEN_MAX }),
+  };
+
+  function activateSubtab(parentSelector, key) {
+    document.querySelectorAll(`${parentSelector} .subtab-btn`).forEach((b) => {
+      const isActive = b.dataset.subtab === key;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-selected', String(isActive));
+    });
+    document.querySelectorAll(`${parentSelector} .subtab-panel`).forEach((p) => {
+      p.hidden = p.id !== 'subtab-' + key;
+    });
+    eqPanels[key].render();
+  }
+
+  document.querySelectorAll('#tab-hom .subtab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => activateSubtab('#tab-hom', btn.dataset.subtab));
+  });
+  document.querySelectorAll('#tab-sum .subtab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => activateSubtab('#tab-sum', btn.dataset.subtab));
+  });
+
+  // ---------- Pestañas principales ----------
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabButtons.forEach((b) => {
+        const isActive = b === btn;
+        b.classList.toggle('active', isActive);
+        b.setAttribute('aria-selected', String(isActive));
+      });
+      tabPanels.forEach((p) => {
+        p.hidden = p.id !== 'tab-' + target;
+      });
+      if (target === 'single') {
+        render();
+      } else if (target === 'hom') {
+        const activeKey = document.querySelector('#tab-hom .subtab-btn.active').dataset.subtab;
+        eqPanels[activeKey].render();
+      } else if (target === 'sum') {
+        const activeKey = document.querySelector('#tab-sum .subtab-btn.active').dataset.subtab;
+        eqPanels[activeKey].render();
+      }
+      // 'teoria' tab is static content; no re-render needed.
+    });
+  });
+
+  // ---------- Teoría: tarjetas generadas desde los datos de i18n ----------
+  function renderTheory() {
+    const grid = document.querySelector('.theory-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    t('theory').forEach((card) => {
+      const el = document.createElement('div');
+      el.className = 'theory-card';
+      el.innerHTML = `<h3>${card.title}</h3><p>${card.desc}</p><div class="theory-example">${card.exampleHtml}</div>`;
+      grid.appendChild(el);
+    });
+  }
+
+  // ---------- Selector de idioma (ES / EN) ----------
+  function applyLanguage(lang) {
+    LANG = lang;
+    document.documentElement.lang = lang;
+    document.title = t('title');
+
+    document.querySelectorAll('[data-i18n]').forEach((el) => {
+      el.textContent = t(el.dataset.i18n);
+    });
+    document.querySelectorAll('[data-i18n-aria]').forEach((el) => {
+      el.setAttribute('aria-label', t(el.dataset.i18nAria));
+    });
+
+    renderTheory();
+
+    document.querySelectorAll('.lang-btn').forEach((b) => {
+      const isActive = b.dataset.lang === lang;
+      b.classList.toggle('active', isActive);
+      b.setAttribute('aria-pressed', String(isActive));
+    });
+
+    // Vuelve a generar el contenido dinámico (resúmenes, leyendas de unidades,
+    // mensajes de error) de la pestaña actualmente visible en el nuevo idioma.
+    const activeTabBtn = document.querySelector('.tab-btn.active');
+    const activeTab = activeTabBtn ? activeTabBtn.dataset.tab : 'single';
+    if (activeTab === 'single') {
+      render();
+    } else if (activeTab === 'hom') {
+      const activeKey = document.querySelector('#tab-hom .subtab-btn.active').dataset.subtab;
+      eqPanels[activeKey].render();
+    } else if (activeTab === 'sum') {
+      const activeKey = document.querySelector('#tab-sum .subtab-btn.active').dataset.subtab;
+      eqPanels[activeKey].render();
+    }
+  }
+
+  document.querySelectorAll('.lang-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.lang !== LANG) applyLanguage(btn.dataset.lang);
+    });
+  });
+
+  renderTheory();
+  render();
+})();
+</script>
+</body>
+</html>
